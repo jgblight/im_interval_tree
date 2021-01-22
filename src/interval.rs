@@ -120,6 +120,18 @@ impl<T: Ord + Clone> Interval<T> {
         self.get_overlap(other).is_some()
     }
 
+    pub fn contains(&self, other: &Self) -> bool {
+        let left_side_lte = match low_bound_cmp(self.low(), other.low()) {
+            Ordering::Greater => false,
+            _ => true,
+        };
+        let right_side_gte = match high_bound_cmp(self.high(), other.high()) {
+            Ordering::Less => false,
+            _ => true
+        };
+        left_side_lte && right_side_gte
+    }
+
     pub fn low(&self) -> &Bound<T> {
         &*self.low
     }
