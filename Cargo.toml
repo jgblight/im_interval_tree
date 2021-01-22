@@ -1,0 +1,9 @@
+[package]
+name = "im_interval_tree"
+version = "0.1.0"
+authors = ["Jennifer Blight <jgblight@gmail.com>"]
+edition = "2018"
+
+
+[dev-dependencies]
+quickcheck = { git = "https://github.com/BurntSushi/quickcheck", rev = "71d743a" }
