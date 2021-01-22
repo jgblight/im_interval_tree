@@ -12,7 +12,7 @@ quickcheck! {
 
         let mut collected = HashSet::new();
         for i in tree.iter() {
-            collected.insert((*i).clone());
+            collected.insert(i.clone());
         }
         TestResult::from_bool(collected == intervals)
     }
@@ -37,7 +37,7 @@ quickcheck! {
 
         let mut collected = HashSet::new();
         for i in tree.iter() {
-            collected.insert((*i).clone());
+            collected.insert(i.clone());
         }
         TestResult::from_bool(collected == expected)
     }
@@ -56,7 +56,7 @@ quickcheck! {
 
         let mut collected = HashSet::new();
         for i in tree.query_interval(&query) {
-            collected.insert((*i).clone());
+            collected.insert(i.clone());
         }
         TestResult::from_bool(collected == expected)
     }
@@ -88,7 +88,7 @@ quickcheck! {
 
         let mut collected = HashSet::new();
         for i in tree.query_point(&query) {
-            collected.insert((*i).clone());
+            collected.insert(i.clone());
         }
         TestResult::from_bool(collected == expected)
     }

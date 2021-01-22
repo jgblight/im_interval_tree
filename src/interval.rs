@@ -127,7 +127,7 @@ impl<T: Ord + Clone> Interval<T> {
         };
         let right_side_gte = match high_bound_cmp(self.high(), other.high()) {
             Ordering::Less => false,
-            _ => true
+            _ => true,
         };
         left_side_lte && right_side_gte
     }

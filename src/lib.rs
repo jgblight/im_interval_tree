@@ -12,7 +12,7 @@ use crate::interval::*;
 
 #[derive(Clone, Hash)]
 struct Node<T: Ord + Clone> {
-    interval: Rc<Interval<T>>,
+    interval: Interval<T>,
     left: Option<Rc<Node<T>>>,
     right: Option<Rc<Node<T>>>,
     height: usize,
@@ -22,7 +22,7 @@ struct Node<T: Ord + Clone> {
 
 impl<T: Ord + Clone> Node<T> {
     fn new(
-        interval: Rc<Interval<T>>,
+        interval: Interval<T>,
         left: Option<Rc<Node<T>>>,
         right: Option<Rc<Node<T>>>,
     ) -> Node<T> {
@@ -39,7 +39,7 @@ impl<T: Ord + Clone> Node<T> {
         }
     }
 
-    fn leaf(interval: Rc<Interval<T>>) -> Node<T> {
+    fn leaf(interval: Interval<T>) -> Node<T> {
         Node::new(interval, None, None)
     }
 
@@ -51,7 +51,7 @@ impl<T: Ord + Clone> Node<T> {
     }
 
     fn get_max(
-        interval: &Rc<Interval<T>>,
+        interval: &Interval<T>,
         left: &Option<Rc<Node<T>>>,
         right: &Option<Rc<Node<T>>>,
     ) -> Rc<Bound<T>> {
@@ -65,7 +65,7 @@ impl<T: Ord + Clone> Node<T> {
     }
 
     fn get_min(
-        interval: &Rc<Interval<T>>,
+        interval: &Interval<T>,
         left: &Option<Rc<Node<T>>>,
         right: &Option<Rc<Node<T>>>,
     ) -> Rc<Bound<T>> {
@@ -83,9 +83,9 @@ impl<T: Ord + Clone> Node<T> {
     }
 
     fn insert(&self, interval: Interval<T>) -> Self {
-        let res = if interval < *self.interval {
+        let res = if &interval < &self.interval {
             let insert_left = match &self.left {
-                None => Node::leaf(Rc::new(interval)),
+                None => Node::leaf(interval),
                 Some(left_tree) => left_tree.insert(interval),
             };
             Node::new(
@@ -93,9 +93,9 @@ impl<T: Ord + Clone> Node<T> {
                 Some(Rc::new(insert_left)),
                 self.right.clone(),
             )
-        } else if interval > *self.interval {
+        } else if &interval > &self.interval {
             let insert_right = match &self.right {
-                None => Node::new(Rc::new(interval), None, None),
+                None => Node::leaf(interval),
                 Some(right_tree) => right_tree.insert(interval),
             };
             Node::new(
@@ -109,7 +109,7 @@ impl<T: Ord + Clone> Node<T> {
         res.balance()
     }
 
-    fn get_minimum(&self) -> Rc<Interval<T>> {
+    fn get_minimum(&self) -> Interval<T> {
         match &self.left {
             None => self.interval.clone(),
             Some(left_tree) => left_tree.get_minimum(),
@@ -117,7 +117,7 @@ impl<T: Ord + Clone> Node<T> {
     }
 
     fn remove(&self, interval: &Interval<T>) -> Option<Rc<Self>> {
-        let res = if interval == &*self.interval {
+        let res = if interval == &self.interval {
             match (&self.left, &self.right) {
                 (None, None) => None,
                 (Some(left_tree), None) => Some(left_tree.clone()),
@@ -127,7 +127,7 @@ impl<T: Ord + Clone> Node<T> {
                     let new_node = Node::new(
                         successor.clone(),
                         self.left.clone(),
-                        right_tree.remove(&*successor),
+                        right_tree.remove(&successor),
                     );
                     Some(Rc::new(new_node))
                 }
@@ -199,7 +199,7 @@ pub struct Iter<T: Ord + Clone> {
 }
 
 impl<T: Ord + Clone> Iterator for Iter<T> {
-    type Item = Rc<Interval<T>>;
+    type Item = Interval<T>;
     fn next(&mut self) -> Option<Self::Item> {
         while let Some(node) = self.stack.pop() {
             if let Some(left_tree) = &node.left {
@@ -226,7 +226,7 @@ impl<T: Ord + Clone> Iterator for Iter<T> {
                     self.stack.push(right_tree.clone())
                 }
             }
-            if self.query.overlaps(&*node.interval) {
+            if self.query.overlaps(&node.interval) {
                 return Some(node.interval.clone());
             }
         }
@@ -246,7 +246,7 @@ impl<T: Ord + Clone> IntervalTree<T> {
 
     pub fn insert(&self, interval: Interval<T>) -> IntervalTree<T> {
         let new_root = match &self.root {
-            None => Node::leaf(Rc::new(interval)),
+            None => Node::leaf(interval),
             Some(node) => node.insert(interval),
         };
         IntervalTree {
@@ -263,10 +263,7 @@ impl<T: Ord + Clone> IntervalTree<T> {
         }
     }
 
-    pub fn query_interval(
-        &self,
-        interval: &Interval<T>,
-    ) -> impl Iterator<Item = Rc<Interval<T>>> + '_ {
+    pub fn query_interval(&self, interval: &Interval<T>) -> impl Iterator<Item = Interval<T>> + '_ {
         let mut stack = Vec::new();
         if let Some(node) = &self.root {
             stack.push(node.clone())
@@ -277,12 +274,12 @@ impl<T: Ord + Clone> IntervalTree<T> {
         }
     }
 
-    pub fn query_point(&self, point: &T) -> impl Iterator<Item = Rc<Interval<T>>> + '_ {
+    pub fn query_point(&self, point: &T) -> impl Iterator<Item = Interval<T>> + '_ {
         let interval = Interval::new(Included(point.clone()), Included(point.clone()));
         self.query_interval(&interval)
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = Rc<Interval<T>>> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = Interval<T>> + '_ {
         self.query_interval(&Interval::new(Unbounded, Unbounded))
     }
 }
