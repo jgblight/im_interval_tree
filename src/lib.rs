@@ -234,7 +234,7 @@ impl<T: Ord + Clone> Iterator for Iter<T> {
     }
 }
 
-#[derive(Hash)]
+#[derive(Clone, Hash)]
 pub struct IntervalTree<T: Ord + Clone> {
     root: Option<Rc<Node<T>>>,
 }
