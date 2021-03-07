@@ -70,13 +70,22 @@ pub fn high_bound_max<T: Ord + Clone>(a: &Rc<Bound<T>>, b: &Rc<Bound<T>>) -> Rc<
     }
 }
 
+/// A data structure for representing intervals
 #[derive(Debug, Clone, Hash)]
 pub struct Interval<T: Ord + Clone> {
-    pub low: Rc<Bound<T>>,
-    pub high: Rc<Bound<T>>,
+    pub(crate) low: Rc<Bound<T>>,
+    pub(crate) high: Rc<Bound<T>>,
 }
 
 impl<T: Ord + Clone> Interval<T> {
+    /// Construct a new Interval from two Bounds
+    ///
+    /// # Example
+    /// ```
+    /// # use im_interval_tree::Interval;
+    /// use std::ops::Bound::*;
+    /// let interval = Interval::new(Included(3), Excluded(5));
+    /// ```
     pub fn new(low: Bound<T>, high: Bound<T>) -> Interval<T> {
         Interval {
             low: Rc::new(low),
@@ -96,6 +105,23 @@ impl<T: Ord + Clone> Interval<T> {
         }
     }
 
+    /// Get the overlap between two Intervals
+    ///
+    /// # Example
+    /// ```
+    /// # use im_interval_tree::Interval;
+    /// # use std::ops::Bound::*;
+    /// let interval = Interval::new(Included(1), Excluded(3));
+    /// let overlaps = Interval::new(Included(2), Excluded(4));
+    /// let no_overlap = Interval::new(Included(3), Excluded(4));
+    ///
+    /// assert_eq!(
+    ///     interval.get_overlap(&overlaps),
+    ///     Some(Interval::new(Included(2), Excluded(3)))
+    /// );
+    ///
+    /// assert_eq!(interval.get_overlap(&no_overlap), None);
+    /// ```
     pub fn get_overlap(&self, other: &Self) -> Option<Self> {
         let low = match low_bound_cmp(&*self.low, &*other.low) {
             Ordering::Less => other.low.clone(),
@@ -116,10 +142,36 @@ impl<T: Ord + Clone> Interval<T> {
         }
     }
 
+    /// Check whether two intervals overlap
+    ///
+    /// # Example
+    /// ```
+    /// # use im_interval_tree::Interval;
+    /// # use std::ops::Bound::*;
+    /// let interval = Interval::new(Included(1), Excluded(3));
+    /// let overlaps = Interval::new(Included(2), Excluded(4));
+    /// let no_overlap = Interval::new(Included(3), Excluded(4));
+    ///
+    /// assert_eq!(interval.overlaps(&overlaps), true);
+    /// assert_eq!(interval.overlaps(&no_overlap), false);
+    /// ```
     pub fn overlaps(&self, other: &Self) -> bool {
         self.get_overlap(other).is_some()
     }
 
+    /// Check whether an interval contains another
+    ///
+    /// # Example
+    /// ```
+    /// # use im_interval_tree::Interval;
+    /// # use std::ops::Bound::*;
+    /// let interval = Interval::new(Included(1), Excluded(4));
+    /// let contained = Interval::new(Included(2), Excluded(3));
+    /// let not_contained = Interval::new(Included(2), Excluded(6));
+    ///
+    /// assert_eq!(interval.contains(&contained), true);
+    /// assert_eq!(interval.contains(&not_contained), false);
+    /// ```
     pub fn contains(&self, other: &Self) -> bool {
         let left_side_lte = match low_bound_cmp(self.low(), other.low()) {
             Ordering::Greater => false,
@@ -132,10 +184,28 @@ impl<T: Ord + Clone> Interval<T> {
         left_side_lte && right_side_gte
     }
 
+    /// Return the lower bound
+    ///
+    /// # Example
+    /// ```
+    /// # use im_interval_tree::Interval;
+    /// # use std::ops::Bound::*;
+    /// let interval = Interval::new(Included(3), Excluded(5));
+    /// assert_eq!(interval.low(), &Included(3))
+    /// ```
     pub fn low(&self) -> &Bound<T> {
         &*self.low
     }
 
+    /// Return the upper bound
+    ///
+    /// # Example
+    /// ```
+    /// # use im_interval_tree::Interval;
+    /// # use std::ops::Bound::*;
+    /// let interval = Interval::new(Included(3), Excluded(5));
+    /// assert_eq!(interval.high(), &Excluded(5))
+    /// ```
     pub fn high(&self) -> &Bound<T> {
         &*self.high
     }
