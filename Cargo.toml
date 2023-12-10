@@ -8,5 +8,8 @@ license = "MIT"
 repository = "https://github.com/jgblight/im_interval_tree"
 categories = ["data-structures"]
 
+[features]
+arc = []
+
 [dev-dependencies]
 quickcheck = { git = "https://github.com/BurntSushi/quickcheck", rev = "71d743a" }

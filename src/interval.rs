@@ -7,7 +7,8 @@ use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 use std::ops::Bound;
 use std::ops::Bound::*;
-use std::rc::Rc;
+
+use crate::shared::Shared;
 
 pub fn low_bound_cmp<T: Ord>(a: &Bound<T>, b: &Bound<T>) -> Ordering {
     match (a, b) {
@@ -33,7 +34,10 @@ pub fn low_bound_cmp<T: Ord>(a: &Bound<T>, b: &Bound<T>) -> Ordering {
     }
 }
 
-pub fn low_bound_min<T: Ord + Clone>(a: &Rc<Bound<T>>, b: &Rc<Bound<T>>) -> Rc<Bound<T>> {
+pub fn low_bound_min<T: Ord + Clone>(
+    a: &Shared<Bound<T>>,
+    b: &Shared<Bound<T>>,
+) -> Shared<Bound<T>> {
     match low_bound_cmp(a, b) {
         Ordering::Less => a.clone(),
         _ => b.clone(),
@@ -64,7 +68,10 @@ pub fn high_bound_cmp<T: Ord + Clone>(a: &Bound<T>, b: &Bound<T>) -> Ordering {
     }
 }
 
-pub fn high_bound_max<T: Ord + Clone>(a: &Rc<Bound<T>>, b: &Rc<Bound<T>>) -> Rc<Bound<T>> {
+pub fn high_bound_max<T: Ord + Clone>(
+    a: &Shared<Bound<T>>,
+    b: &Shared<Bound<T>>,
+) -> Shared<Bound<T>> {
     match high_bound_cmp(a, b) {
         Ordering::Less => b.clone(),
         _ => a.clone(),
@@ -74,8 +81,8 @@ pub fn high_bound_max<T: Ord + Clone>(a: &Rc<Bound<T>>, b: &Rc<Bound<T>>) -> Rc<
 /// A data structure for representing intervals
 #[derive(Debug, Clone)]
 pub struct Interval<T: Ord + Clone> {
-    pub(crate) low: Rc<Bound<T>>,
-    pub(crate) high: Rc<Bound<T>>,
+    pub(crate) low: Shared<Bound<T>>,
+    pub(crate) high: Shared<Bound<T>>,
 }
 
 impl<T: Ord + Clone> Interval<T> {
@@ -89,8 +96,8 @@ impl<T: Ord + Clone> Interval<T> {
     /// ```
     pub fn new(low: Bound<T>, high: Bound<T>) -> Interval<T> {
         Interval {
-            low: Rc::new(low),
-            high: Rc::new(high),
+            low: Shared::new(low),
+            high: Shared::new(high),
         }
     }
 
