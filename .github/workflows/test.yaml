@@ -1,8 +1,6 @@
 name: Test
 
-on:
-  push: {}
-  pull_request: {}
+on: [push, pull_request]
 
 jobs:
   test:
@@ -10,17 +8,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-            toolchain: stable
-            override: true
-            components: rustfmt, clippy
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Check format
         run: cargo fmt --all -- --check
-      
+
       - name: Check clippy
         run: cargo clippy -- -D warnings
-      
+
       - name: Run tests
         run: cargo test
