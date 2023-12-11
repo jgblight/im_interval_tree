@@ -1,9 +1,9 @@
 [package]
 name = "im_interval_tree"
 description = "An immutable data structure for storing and querying a collection of intervals"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Jennifer Blight <jgblight@gmail.com>"]
-edition = "2018"
+edition = "2021"
 license = "MIT"
 repository = "https://github.com/jgblight/im_interval_tree"
 categories = ["data-structures"]

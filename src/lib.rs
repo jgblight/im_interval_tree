@@ -65,12 +65,12 @@ impl<T: Ord + Clone> Node<T> {
         let max = Self::get_max(&interval, &left, &right);
         let min = Self::get_min(&interval, &left, &right);
         Node {
-            interval: interval,
-            left: left,
-            right: right,
-            height: height,
-            max: max,
-            min: min,
+            interval,
+            left,
+            right,
+            height,
+            max,
+            min,
         }
     }
 
@@ -118,28 +118,30 @@ impl<T: Ord + Clone> Node<T> {
     }
 
     fn insert(&self, interval: Interval<T>) -> Self {
-        let res = if &interval < &self.interval {
-            let insert_left = match &self.left {
-                None => Node::leaf(interval),
-                Some(left_tree) => left_tree.insert(interval),
-            };
-            Node::new(
-                self.interval.clone(),
-                Some(Rc::new(insert_left)),
-                self.right.clone(),
-            )
-        } else if &interval > &self.interval {
-            let insert_right = match &self.right {
-                None => Node::leaf(interval),
-                Some(right_tree) => right_tree.insert(interval),
-            };
-            Node::new(
-                self.interval.clone(),
-                self.left.clone(),
-                Some(Rc::new(insert_right)),
-            )
-        } else {
-            self.clone()
+        let res = match interval.cmp(&self.interval) {
+            Ordering::Less => {
+                let insert_left = match &self.left {
+                    None => Node::leaf(interval),
+                    Some(left_tree) => left_tree.insert(interval),
+                };
+                Node::new(
+                    self.interval.clone(),
+                    Some(Rc::new(insert_left)),
+                    self.right.clone(),
+                )
+            }
+            Ordering::Greater => {
+                let insert_right = match &self.right {
+                    None => Node::leaf(interval),
+                    Some(right_tree) => right_tree.insert(interval),
+                };
+                Node::new(
+                    self.interval.clone(),
+                    self.left.clone(),
+                    Some(Rc::new(insert_right)),
+                )
+            }
+            Ordering::Equal => self.clone(),
         };
         res.balance()
     }
@@ -152,8 +154,8 @@ impl<T: Ord + Clone> Node<T> {
     }
 
     fn remove(&self, interval: &Interval<T>) -> Option<Rc<Self>> {
-        let res = if interval == &self.interval {
-            match (&self.left, &self.right) {
+        let res = match interval.cmp(&self.interval) {
+            Ordering::Equal => match (&self.left, &self.right) {
                 (None, None) => None,
                 (Some(left_tree), None) => Some(left_tree.clone()),
                 (None, Some(right_tree)) => Some(right_tree.clone()),
@@ -166,22 +168,17 @@ impl<T: Ord + Clone> Node<T> {
                     );
                     Some(Rc::new(new_node))
                 }
-            }
-        } else if interval < &self.interval {
-            match &self.left {
+            },
+            Ordering::Less => match &self.left {
                 None => Some(Rc::new(self.clone())),
                 Some(left_tree) => Some(Rc::new(self.replace_left(left_tree.remove(interval)))),
-            }
-        } else {
-            match &self.right {
+            },
+            Ordering::Greater => match &self.right {
                 None => Some(Rc::new(self.clone())),
                 Some(right_tree) => Some(Rc::new(self.replace_right(right_tree.remove(interval)))),
-            }
+            },
         };
-        match res {
-            None => None,
-            Some(r) => Some(Rc::new(r.balance())),
-        }
+        res.map(|r| Rc::new(r.balance()))
     }
 
     fn replace_left(&self, new_left: Option<Rc<Node<T>>>) -> Node<T> {
@@ -386,7 +383,7 @@ impl<T: Ord + Clone> IntervalTree<T> {
             stack.push(node.clone())
         }
         Iter {
-            stack: stack,
+            stack,
             query: interval.clone(),
         }
     }
@@ -438,5 +435,11 @@ impl<T: Ord + Clone> IntervalTree<T> {
     /// ```
     pub fn iter(&self) -> impl Iterator<Item = Interval<T>> + '_ {
         self.query_interval(&Interval::new(Unbounded, Unbounded))
+    }
+}
+
+impl<T: Ord + Clone> Default for IntervalTree<T> {
+    fn default() -> Self {
+        Self::new()
     }
 }
