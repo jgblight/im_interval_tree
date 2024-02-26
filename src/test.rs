@@ -10,10 +10,7 @@ quickcheck! {
             tree = tree.insert(i.clone());
         }
 
-        let mut collected = HashSet::new();
-        for i in tree.iter() {
-            collected.insert(i.clone());
-        }
+        let collected = tree.iter().collect::<HashSet<_>>();
         TestResult::from_bool(collected == intervals)
     }
 }
@@ -35,10 +32,7 @@ quickcheck! {
 
         tree = tree.remove(interval_to_remove);
 
-        let mut collected = HashSet::new();
-        for i in tree.iter() {
-            collected.insert(i.clone());
-        }
+        let collected = tree.iter().collect::<HashSet<_>>();
         TestResult::from_bool(collected == expected)
     }
 }
@@ -54,10 +48,7 @@ quickcheck! {
             }
         }
 
-        let mut collected = HashSet::new();
-        for i in tree.query_interval(&query) {
-            collected.insert(i.clone());
-        }
+        let collected = tree.query_interval(&query).collect::<HashSet<_>>();
         TestResult::from_bool(collected == expected)
     }
 }
@@ -86,10 +77,7 @@ quickcheck! {
             }
         }
 
-        let mut collected = HashSet::new();
-        for i in tree.query_point(&query) {
-            collected.insert(i.clone());
-        }
+        let collected = tree.query_point(&query).collect::<HashSet<_>>();
         TestResult::from_bool(collected == expected)
     }
 }
@@ -105,4 +93,25 @@ quickcheck! {
         };
         TestResult::from_bool(get_overlap_is_commutative && get_overlap_is_minimal)
     }
+}
+
+#[cfg(feature = "arc")]
+#[test]
+fn interval_tree_is_send() {
+    let mut tree1 = IntervalTree::new();
+    let tree2 = tree1.insert(Interval::new(Included(1), Excluded(5)));
+    let tree3 = tree1.insert(Interval::new(Included(10), Excluded(50)));
+    let handle = std::thread::spawn(move || {
+        let collected = tree2.iter().collect::<HashSet<Interval<i32>>>();
+        assert_eq!(
+            collected,
+            HashSet::from([Interval::new(Included(1), Excluded(5))])
+        );
+    });
+    handle.join().expect("Joining thread");
+    let collected = tree3.iter().collect::<HashSet<Interval<i32>>>();
+    assert_eq!(
+        collected,
+        HashSet::from([Interval::new(Included(10), Excluded(50))])
+    )
 }
