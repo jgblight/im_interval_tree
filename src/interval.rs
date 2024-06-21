@@ -4,6 +4,7 @@ use quickcheck::*;
 use std::cmp::Ord;
 use std::cmp::Ordering;
 use std::fmt::Debug;
+use std::hash::{Hash, Hasher};
 use std::ops::Bound;
 use std::ops::Bound::*;
 use std::rc::Rc;
@@ -33,7 +34,7 @@ pub fn low_bound_cmp<T: Ord>(a: &Bound<T>, b: &Bound<T>) -> Ordering {
 }
 
 pub fn low_bound_min<T: Ord + Clone>(a: &Rc<Bound<T>>, b: &Rc<Bound<T>>) -> Rc<Bound<T>> {
-    match low_bound_cmp(&*a, &*b) {
+    match low_bound_cmp(a, b) {
         Ordering::Less => a.clone(),
         _ => b.clone(),
     }
@@ -64,14 +65,14 @@ pub fn high_bound_cmp<T: Ord + Clone>(a: &Bound<T>, b: &Bound<T>) -> Ordering {
 }
 
 pub fn high_bound_max<T: Ord + Clone>(a: &Rc<Bound<T>>, b: &Rc<Bound<T>>) -> Rc<Bound<T>> {
-    match high_bound_cmp(&*a, &*b) {
+    match high_bound_cmp(a, b) {
         Ordering::Less => b.clone(),
         _ => a.clone(),
     }
 }
 
 /// A data structure for representing intervals
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone)]
 pub struct Interval<T: Ord + Clone> {
     pub(crate) low: Rc<Bound<T>>,
     pub(crate) high: Rc<Bound<T>>,
@@ -131,10 +132,7 @@ impl<T: Ord + Clone> Interval<T> {
             Ordering::Less => self.high.clone(),
             _ => other.high.clone(),
         };
-        let interval = Interval {
-            low: low,
-            high: high,
-        };
+        let interval = Interval { low, high };
         if Self::valid(&interval) {
             Some(interval)
         } else {
@@ -173,14 +171,8 @@ impl<T: Ord + Clone> Interval<T> {
     /// assert_eq!(interval.contains(&not_contained), false);
     /// ```
     pub fn contains(&self, other: &Self) -> bool {
-        let left_side_lte = match low_bound_cmp(self.low(), other.low()) {
-            Ordering::Greater => false,
-            _ => true,
-        };
-        let right_side_gte = match high_bound_cmp(self.high(), other.high()) {
-            Ordering::Less => false,
-            _ => true,
-        };
+        let left_side_lte = !matches!(low_bound_cmp(self.low(), other.low()), Ordering::Greater);
+        let right_side_gte = !matches!(high_bound_cmp(self.high(), other.high()), Ordering::Less);
         left_side_lte && right_side_gte
     }
 
@@ -194,7 +186,7 @@ impl<T: Ord + Clone> Interval<T> {
     /// assert_eq!(interval.low(), &Included(3))
     /// ```
     pub fn low(&self) -> &Bound<T> {
-        &*self.low
+        &self.low
     }
 
     /// Return the upper bound
@@ -207,7 +199,7 @@ impl<T: Ord + Clone> Interval<T> {
     /// assert_eq!(interval.high(), &Excluded(5))
     /// ```
     pub fn high(&self) -> &Bound<T> {
-        &*self.high
+        &self.high
     }
 }
 
@@ -233,6 +225,13 @@ impl<T: Ord + Clone> Ord for Interval<T> {
         } else {
             low_bound_cmp
         }
+    }
+}
+
+impl<T: Ord + Clone + Hash> Hash for Interval<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.low.hash(state);
+        self.high.hash(state);
     }
 }
 
